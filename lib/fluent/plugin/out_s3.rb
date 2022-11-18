@@ -376,7 +376,12 @@ module Fluent::Plugin
             put_options[:metadata][k] = extract_placeholders(v, chunk).gsub(%r(%{[^}]+}), {"%{index}" => sprintf(@index_format, i - 1)})
           end
         end
-        @bucket.object(s3path).put(put_options)
+
+        begin
+          @bucket.object(s3path).put(put_options)
+        rescue Aws::S3::Errors::ServiceError => err
+          raise Fluent::UnrecoverableError, err
+        end
 
         @values_for_s3_object_chunk.delete(chunk.unique_id)
 
